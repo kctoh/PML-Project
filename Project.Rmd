@@ -1,0 +1,74 @@
+---
+title: "Practical Machine Learning Project"
+author: "Toh KC"
+date: "November 4, 2017"
+output: 
+  html_document: 
+    keep_md: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+## Data Preparation
+Loading required libraries and preparing data sets
+```{r prep}
+library(caret)
+library(randomForest)
+training <- read.csv("pml-training.csv", na.strings = c("NA", ""))
+testing <- read.csv("pml-testing.csv", na.strings = c("NA", ""))
+trainingcheck<-dim(training)
+testingcheck<-dim(testing)
+```
+Training data consist of 19622 observations and 160 variables
+Testing data consist of 20 observations and 160 variables
+
+## Data Cleaning
+Removing data null values and selecting features
+```{r remove}
+training2 <- training[, colSums(is.na(training)) == 0]
+testing2 <- testing[, colSums(is.na(testing)) == 0]
+training2<- training2[, -c(1:7)]
+testing2 <- testing2[, -c(1:7)]
+trainingcheck2<-dim(training2)
+```
+The cleaned data sets have 53 variables. Number of observations remain unchanged
+
+## Data Grouping
+Splitting the data into 2 groups, for training and validation
+```{r group}
+set.seed(1234) 
+inTrain <- createDataPartition(training2$classe, p = 0.7, list = FALSE)
+train <- training2[inTrain, ]
+validation <- training2[-inTrain, ]
+```
+
+## Prediction
+Selection of random forest for the modelling
+```{r randomforest}
+fit <- randomForest(classe ~ ., data = train, importance = TRUE, ntrees = 10)
+model <- predict(fit, train)
+print(confusionMatrix(model, train$classe))
+accuracy <- postResample(model, train$classe)
+accuracy
+
+```
+Accuracy is 100%. The model is suitable. Next step will be to test the model with the validation data
+
+## Validation
+```{r validation}
+modelv <- predict(fit, validation)
+print(confusionMatrix(modelv, validation$classe))
+accuracyv <- postResample(modelv, validation$classe)
+accuracyv
+
+```
+Accuracy is 99.6%. This model can be used with the test data set
+
+## Test
+Testing the model with the test data
+```{r test}
+modeltest <- predict(fit, testing2)
+modeltest
+
+```
